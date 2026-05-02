@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, Column, Integer, String, Text
@@ -7,63 +7,64 @@ from sqlalchemy.orm import sessionmaker
 import os
 from fastapi.middleware.cors import CORSMiddleware
 
-# Database setup
+# ✅ Create app FIRST
+app = FastAPI()
+
+# ✅ CORS (after app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # later restrict
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------------- DB SETUP ----------------
 DATABASE_URL = "sqlite:///./form_data.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
-origins = [
-    "https://pyhton-first-form-1.onrender.com",  # your frontend URL
-]
 
 # Model
 class FormData(Base):
     __tablename__ = "form_data"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(String)
     phone = Column(String)
-    email = Column(String, index=True)
+    email = Column(String)
     message = Column(Text)
-    
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,   # or ["*"] for testing
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# Create tables
+
 Base.metadata.create_all(bind=engine)
 
-# FastAPI app
-app = FastAPI()
-
-# Mount static files
+# ---------------- FRONTEND PATH ----------------
 frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
+
 app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
+# ---------------- ROUTES ----------------
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    # Serve the index.html
-    index_path = os.path.join(os.path.dirname(__file__), "../frontend/index.html")
-    with open(index_path, "r") as f:
+    with open(os.path.join(frontend_path, "index.html")) as f:
         return f.read()
 
 @app.get("/second", response_class=HTMLResponse)
 async def read_second():
-    second_path = os.path.join(os.path.dirname(__file__), "../frontend/second.html")
-    with open(second_path, "r") as f:
+    with open(os.path.join(frontend_path, "second.html")) as f:
         return f.read()
 
 @app.post("/submit")
-async def submit_form(name: str = Form(...), phone: str = Form(...), email: str = Form(...), message: str = Form(...)):
+async def submit_form(
+    name: str = Form(...),
+    phone: str = Form(...),
+    email: str = Form(...),
+    message: str = Form(...)
+):
     db = SessionLocal()
     try:
         form_entry = FormData(name=name, phone=phone, email=email, message=message)
         db.add(form_entry)
         db.commit()
         db.refresh(form_entry)
-        return {"message": "Data saved successfully", "id": form_entry.id}
+        return {"message": "Saved", "id": form_entry.id}
     except Exception as e:
         db.rollback()
         return {"error": str(e)}
@@ -73,12 +74,6 @@ async def submit_form(name: str = Form(...), phone: str = Form(...), email: str 
 @app.get("/data")
 async def get_data():
     db = SessionLocal()
-    try:
-        data = db.query(FormData).all()
-        return [{"id": item.id, "name": item.name, "phone": item.phone, "email": item.email, "message": item.message} for item in data]
-    finally:
-        db.close()
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    data = db.query(FormData).all()
+    db.close()
+    return data

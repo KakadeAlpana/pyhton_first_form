@@ -1,30 +1,27 @@
 from fastapi import FastAPI, Form
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-from fastapi.middleware.cors import CORSMiddleware
 
-# ✅ Create app FIRST
+# ---------------- APP ----------------
 app = FastAPI()
 
-# ✅ CORS (after app)
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # later restrict
+    allow_origins=["*"],  # change later to your frontend URL
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---------------- DB SETUP ----------------
+# ---------------- DATABASE ----------------
 DATABASE_URL = "sqlite:///./form_data.db"
+
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
-# Model
 class FormData(Base):
     __tablename__ = "form_data"
     id = Column(Integer, primary_key=True, index=True)
@@ -35,24 +32,13 @@ class FormData(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# ---------------- FRONTEND PATH ----------------
-frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
-
-app.mount("/static", StaticFiles(directory=frontend_path), name="static")
-
 # ---------------- ROUTES ----------------
-@app.get("/", response_class=HTMLResponse)
-async def read_root():
-    with open(os.path.join(frontend_path, "index.html")) as f:
-        return f.read()
-
-@app.get("/second", response_class=HTMLResponse)
-async def read_second():
-    with open(os.path.join(frontend_path, "second.html")) as f:
-        return f.read()
+@app.get("/")
+def home():
+    return {"message": "Backend Working"}
 
 @app.post("/submit")
-async def submit_form(
+def submit_form(
     name: str = Form(...),
     phone: str = Form(...),
     email: str = Form(...),
@@ -60,11 +46,11 @@ async def submit_form(
 ):
     db = SessionLocal()
     try:
-        form_entry = FormData(name=name, phone=phone, email=email, message=message)
-        db.add(form_entry)
+        new_data = FormData(name=name, phone=phone, email=email, message=message)
+        db.add(new_data)
         db.commit()
-        db.refresh(form_entry)
-        return {"message": "Saved", "id": form_entry.id}
+        db.refresh(new_data)
+        return {"message": "Data saved successfully"}
     except Exception as e:
         db.rollback()
         return {"error": str(e)}
@@ -72,7 +58,7 @@ async def submit_form(
         db.close()
 
 @app.get("/data")
-async def get_data():
+def get_data():
     db = SessionLocal()
     data = db.query(FormData).all()
     db.close()

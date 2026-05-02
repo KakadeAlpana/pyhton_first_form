@@ -1,92 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Form</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            margin-top: 10px;
-        }
-        input, textarea {
-            padding: 8px;
-            margin-top: 5px;
-        }
-        button {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
 </head>
 <body>
-    <div class="top-links">
-        <a href="/second">Open Page 2</a>
-    </div>
-    <h1>Contact Form</h1>
-    <form id="contactForm">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
 
-        <label for="phone">Phone Number:</label>
-        <input type="tel" id="phone" name="phone" required>
+<h2>Contact Form</h2>
 
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
+<form id="contactForm">
+    <input type="text" name="name" placeholder="Name" required><br><br>
+    <input type="text" name="phone" placeholder="Phone" required><br><br>
+    <input type="email" name="email" placeholder="Email" required><br><br>
+    <textarea name="message" placeholder="Message" required></textarea><br><br>
 
-        <label for="message">Message:</label>
-        <textarea id="message" name="message" rows="4" required></textarea>
+    <button type="submit">Submit</button>
+</form>
 
-        <button type="submit">Submit</button>
-    </form>
+<script>
+document.getElementById("contactForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
 
-    <script>
-        document.getElementById('contactForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            const data = {
-                name: formData.get('name'),
-                phone: formData.get('phone'),
-                email: formData.get('email'),
-                message: formData.get('message')
-            };
+    const formData = new FormData(this);
 
-            try {
-                const response = await fetch("https://your-backend.onrender.com/submit", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams(data)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    alert('Data saved successfully!');
-                    this.reset();
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
+    try {
+        const res = await fetch("https://your-backend.onrender.com/submit", {
+            method: "POST",
+            body: new URLSearchParams(formData)
         });
-    </script>
-   
+
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("Data saved successfully!");
+            this.reset();
+        } else {
+            alert("Error: " + data.error);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
+});
+</script>
+
 </body>
 </html>

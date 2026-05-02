@@ -13,7 +13,7 @@ app = FastAPI()
 # ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to frontend URL later
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -35,39 +35,51 @@ class FormData(Base):
 
 Base.metadata.create_all(bind=engine)
 
+# ---------------- SITE EMAIL MAP ----------------
+SITE_EMAILS = {
+    "A": "webA@gmail.com",
+    "B": "webB@gmail.com",
+    "C": "webC@gmail.com"
+}
+
 # ---------------- EMAIL FUNCTION ----------------
-def send_email(name, phone, email, message):
+def send_email(site, name, phone, user_email, message):
     try:
         sender_email = os.getenv("EMAIL_USER")
         app_password = os.getenv("EMAIL_PASS")
 
+        receiver_email = SITE_EMAILS.get(site, sender_email)
+
         if not sender_email or not app_password:
-            print("Email credentials not set")
+            print("❌ Email credentials not set")
             return
 
-        receiver_email = sender_email  # fixed receiver
+        body = f"""
+New Form Submission - Website {site}
 
-        msg = MIMEText(
-            f"New Form Submission\n\n"
-            f"Name: {name}\n"
-            f"Phone: {phone}\n"
-            f"Email: {email}\n"
-            f"Message: {message}"
-        )
-        msg["Subject"] = "New Contact Form Submission"
+Name: {name}
+Phone: {phone}
+User Email: {user_email}
+Message: {message}
+"""
+
+        msg = MIMEText(body)
+        msg["Subject"] = f"New Contact Form - Site {site}"
         msg["From"] = sender_email
         msg["To"] = receiver_email
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(sender_email, app_password)
-        server.send_message(msg)
-        server.quit()
+        # ⭐ IMPORTANT (dynamic user email)
+        msg["Reply-To"] = user_email
 
-        print("Email sent successfully")
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, app_password)
+            server.send_message(msg)
+
+        print(f"✅ Email sent to {receiver_email}")
 
     except Exception as e:
-        print("Email error:", e)  # won't crash app
+        print("❌ Email error:", e)
 
 # ---------------- ROUTES ----------------
 
@@ -77,6 +89,7 @@ def home():
 
 @app.post("/submit")
 def submit_form(
+    site: str = Form(...),   # ✅ NEW (important)
     name: str = Form(...),
     phone: str = Form(...),
     email: str = Form(...),
@@ -85,7 +98,7 @@ def submit_form(
     db = SessionLocal()
 
     try:
-        # Save to DB
+        # Save to DB (UNCHANGED)
         new_data = FormData(
             name=name,
             phone=phone,
@@ -96,8 +109,8 @@ def submit_form(
         db.commit()
         db.refresh(new_data)
 
-        # Send email (safe)
-        send_email(name, phone, email, message)
+        # Send email (UPDATED)
+        send_email(site, name, phone, email, message)
 
         return {"message": "Data saved successfully"}
 

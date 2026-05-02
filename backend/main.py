@@ -5,12 +5,16 @@ from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 # Database setup
 DATABASE_URL = "sqlite:///./form_data.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+origins = [
+    "https://pyhton-first-form-1.onrender.com",  # your frontend URL
+]
 
 # Model
 class FormData(Base):
@@ -20,7 +24,14 @@ class FormData(Base):
     phone = Column(String)
     email = Column(String, index=True)
     message = Column(Text)
-
+    
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,   # or ["*"] for testing
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Create tables
 Base.metadata.create_all(bind=engine)
 

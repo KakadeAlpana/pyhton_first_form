@@ -37,9 +37,9 @@ Base.metadata.create_all(bind=engine)
 
 # ---------------- SITE EMAIL MAP ----------------
 SITE_EMAILS = {
-    "A": "webA@gmail.com",
-    "B": "webB@gmail.com",
-    "C": "webC@gmail.com"
+    "A": "alpana.pawar89@gmail.com",
+    "B": "alpanakakde@gmail.com",
+  
 }
 
 # ---------------- EMAIL FUNCTION ----------------

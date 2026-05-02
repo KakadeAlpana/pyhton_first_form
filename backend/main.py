@@ -37,6 +37,9 @@ Base.metadata.create_all(bind=engine)
 def home():
     return {"message": "Backend Working"}
 
+@app.get("/test")
+def test():
+    return {"status": "ok"}
 @app.post("/submit")
 def submit_form(
     name: str = Form(...),

@@ -23,7 +23,7 @@ document.getElementById("contactForm").addEventListener("submit", async function
     const formData = new FormData(this);
 
     try {
-        const res = await fetch("https://your-backend.onrender.com/submit", {
+        const res = await fetch("http://127.0.0.1:8000/submit", {
             method: "POST",
             body: new URLSearchParams(formData)
         });

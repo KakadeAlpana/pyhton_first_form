@@ -45,13 +45,16 @@ Base.metadata.create_all(bind=engine)
 
 # ---------------- EMAIL FUNCTION ----------------
 def send_email(site, name, phone, user_email, message):
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
     sender_email = os.getenv("SENDER_EMAIL")
     app_password = os.getenv("SENDER_PASSWORD")
     receiver_email = os.getenv("STORE_EMAIL", "alpana.pawar89@gmail.com")
 
     if not sender_email or not app_password:
-        print("Email credentials not set")
-        return False
+        error = "Email credentials not set"
+        print(error)
+        return False, error
 
     body = f"""
 New form submission
@@ -70,17 +73,18 @@ Message: {message}
     msg["Reply-To"] = user_email
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
             server.login(sender_email, app_password)
             server.send_message(msg)
 
         print(f"Email sent to {receiver_email}")
-        return True
+        return True, None
 
     except Exception as e:
-        print("Email error:", e)
-        return False
+        error = str(e)
+        print("Email error:", error)
+        return False, error
 
 
 # ---------------- ROUTES ----------------
@@ -110,11 +114,12 @@ def submit_form(
         db.commit()
         db.refresh(new_data)
 
-        email_sent = send_email(site, name, phone, email, message)
+        email_sent, email_error = send_email(site, name, phone, email, message)
 
         return {
             "message": "Data saved successfully",
-            "email_sent": email_sent
+            "email_sent": email_sent,
+            "email_error": email_error
         }
 
     except Exception as e:

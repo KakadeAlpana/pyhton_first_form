@@ -69,8 +69,8 @@ Message: {message}
     msg = MIMEText(body)
     msg["Subject"] = f"New Contact Form - Site {site}"
     msg["From"] = sender_email
-    msg["To"] = receiver_email
-    msg["Reply-To"] = user_email
+    msg["To"] = alpana.pawar89@gmail.com
+    # msg["Reply-To"] = user_email
 
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
